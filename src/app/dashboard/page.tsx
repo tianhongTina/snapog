@@ -9,6 +9,7 @@ import { getCurrentMonth } from '@/lib/utils';
 import { PLAN_LIMITS } from '@/types';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default async function DashboardPage() {
   const supabase = await createClient();

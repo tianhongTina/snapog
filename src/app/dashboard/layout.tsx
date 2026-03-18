@@ -4,6 +4,8 @@ import { createClient } from '@/lib/supabase/server';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Key, History, Zap, LogOut, Home } from 'lucide-react';
 
+export const runtime = 'edge';
+
 export default async function DashboardLayout({
   children,
 }: {

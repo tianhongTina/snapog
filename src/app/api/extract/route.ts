@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 import type { ExtractResult } from '@/types';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 export const GET = async (request: NextRequest): Promise<NextResponse> => {
   const { searchParams } = new URL(request.url);

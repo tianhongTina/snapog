@@ -3,7 +3,7 @@ import { createServiceClient } from '@/lib/supabase/server';
 import { hashApiKey } from '@/lib/utils';
 import { PLAN_LIMITS } from '@/types';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 // Internal endpoint to verify API keys (called from edge functions)
 export const GET = async (request: NextRequest): Promise<NextResponse> => {
