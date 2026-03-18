@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useCallback, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { EditorPanel } from '@/components/editor/EditorPanel';
@@ -21,7 +22,7 @@ const PRESET_SIZES = [
   { label: 'Story (9:16)', w: 630, h: 1200 },
 ];
 
-export default function EditorPage() {
+function EditorContent() {
   const searchParams = useSearchParams();
   const { params, setParam, setParams, setIsGenerating, setPreviewUrl, previewUrl } = useEditorStore();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -155,7 +156,6 @@ export default function EditorPage() {
 
         {/* Center: size controls */}
         <div className="flex items-center gap-2 flex-1 justify-center">
-          {/* Width input */}
           <div className="flex items-center gap-1 rounded-md border border-input bg-background overflow-hidden h-8">
             <span className="text-xs text-muted-foreground px-2 border-r border-input">W</span>
             <input
@@ -168,7 +168,6 @@ export default function EditorPage() {
             />
           </div>
           <span className="text-xs text-muted-foreground">×</span>
-          {/* Height input */}
           <div className="flex items-center gap-1 rounded-md border border-input bg-background overflow-hidden h-8">
             <span className="text-xs text-muted-foreground px-2 border-r border-input">H</span>
             <input
@@ -180,7 +179,6 @@ export default function EditorPage() {
               max={1260}
             />
           </div>
-          {/* Preset dropdown */}
           <div className="relative">
             <Button
               variant="outline"
@@ -225,7 +223,6 @@ export default function EditorPage() {
         </div>
       </header>
 
-      {/* Close size dropdown when clicking outside */}
       {showSizeDropdown && (
         <div
           className="fixed inset-0 z-40"
@@ -242,5 +239,13 @@ export default function EditorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function EditorPage() {
+  return (
+    <Suspense fallback={<div className="flex h-screen items-center justify-center text-muted-foreground">Loading editor...</div>}>
+      <EditorContent />
+    </Suspense>
   );
 }

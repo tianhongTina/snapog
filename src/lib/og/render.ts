@@ -1,4 +1,5 @@
-import { ImageResponse } from '@vercel/og';
+import satori from 'satori';
+import { Resvg } from '@resvg/resvg-js';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import type { OGParams, TemplateId } from '@/types';
@@ -13,7 +14,7 @@ const clampDim = (val: number | undefined, def: number, min: number, max: number
   return Math.max(min, Math.min(max, Math.round(val)));
 };
 
-export const renderOGImage = async (params: OGParams): Promise<ImageResponse> => {
+export const renderOGImage = async (params: OGParams): Promise<Response> => {
   const templateId = (params.template || 'tech-dark') as TemplateId;
   const TemplateComponent = TEMPLATES[templateId] || TEMPLATES['tech-dark'];
 
@@ -21,18 +22,34 @@ export const renderOGImage = async (params: OGParams): Promise<ImageResponse> =>
   const height = clampDim(params.height, DEFAULT_HEIGHT, 200, 1260);
 
   const fonts = loadFonts();
-  // Pass resolved dimensions into the template via params
   const resolvedParams = { ...params, width, height };
   const element = TemplateComponent(resolvedParams);
-  // Apply watermark if: watermark=true AND (no watermarkConfig OR watermarkConfig.enabled=true)
-  const wmEnabled = params.watermark &&
+
+  // Apply watermark if enabled
+  const wmEnabled =
+    params.watermark &&
     (params.watermarkConfig === undefined || params.watermarkConfig.enabled !== false);
   const finalElement = wmEnabled ? addWatermark(element, resolvedParams) : element;
 
-  return new ImageResponse(finalElement, {
+  // Render JSX → SVG via satori
+  const svg = await satori(finalElement as any, {
     width,
     height,
     fonts,
+  });
+
+  // Convert SVG → PNG via resvg-js
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'width', value: width },
+  });
+  const pngData = resvg.render();
+  const pngBuffer = pngData.asPng();
+
+  return new Response(new Uint8Array(pngBuffer), {
+    headers: {
+      'Content-Type': 'image/png',
+      'Cache-Control': 'public, max-age=3600',
+    },
   });
 };
 
@@ -40,7 +57,12 @@ const addWatermark = (element: React.ReactElement, params: OGParams): React.Reac
   const React = require('react');
   const W = params.width || DEFAULT_WIDTH;
   const H = params.height || DEFAULT_HEIGHT;
-  const wm = params.watermarkConfig || { enabled: true, text: 'Made with SnapOG', position: 'bottom-right', opacity: 0.6 };
+  const wm = params.watermarkConfig || {
+    enabled: true,
+    text: 'Made with SnapOG',
+    position: 'bottom-right',
+    opacity: 0.6,
+  };
   const text = wm.text || 'Made with SnapOG';
   const opacity = wm.opacity ?? 0.6;
   const position = wm.position || 'bottom-right';
@@ -62,7 +84,7 @@ const addWatermark = (element: React.ReactElement, params: OGParams): React.Reac
   } else if (position === 'bottom-left') {
     Object.assign(positionStyle, { bottom: 16, left: 20 });
   } else if (position === 'bottom-center') {
-    Object.assign(positionStyle, { bottom: 16, left: '50%', transform: 'translateX(-50%)' });
+    Object.assign(positionStyle, { bottom: 16, left: '50%' });
   }
 
   if (position === 'tile') {
@@ -72,21 +94,25 @@ const addWatermark = (element: React.ReactElement, params: OGParams): React.Reac
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
         tiles.push(
-          React.createElement('div', {
-            key: `${row}-${col}`,
-            style: {
-              position: 'absolute',
-              top: 80 + row * 140,
-              left: 60 + col * 380,
-              color: `rgba(255,255,255,${opacity * 0.4})`,
-              fontSize: 18,
-              fontFamily: 'Inter, sans-serif',
-              transform: 'rotate(-30deg)',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              letterSpacing: 1,
+          React.createElement(
+            'div',
+            {
+              key: `${row}-${col}`,
+              style: {
+                position: 'absolute',
+                top: 80 + row * 140,
+                left: 60 + col * 380,
+                color: `rgba(255,255,255,${opacity * 0.4})`,
+                fontSize: 18,
+                fontFamily: 'Inter, sans-serif',
+                transform: 'rotate(-30deg)',
+                whiteSpace: 'nowrap',
+                display: 'flex',
+                letterSpacing: 1,
+              },
             },
-          }, text)
+            text
+          )
         );
       }
     }
@@ -106,38 +132,33 @@ const addWatermark = (element: React.ReactElement, params: OGParams): React.Reac
   );
 };
 
-const loadFonts = () => {
+const loadFonts = (): Array<{
+  name: string;
+  data: ArrayBuffer;
+  weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
+  style: 'normal' | 'italic';
+}> => {
   try {
     const fontsDir = join(process.cwd(), 'public', 'fonts');
 
     const toBuffer = (buf: Buffer): ArrayBuffer => {
       const ab = new ArrayBuffer(buf.byteLength);
-      const view = new Uint8Array(ab);
-      view.set(buf);
+      new Uint8Array(ab).set(buf);
       return ab;
     };
 
-    const interRegular = toBuffer(readFileSync(join(fontsDir, 'inter-regular.woff')));
-    const interBold = toBuffer(readFileSync(join(fontsDir, 'inter-bold.woff')));
-    const robotoRegular = toBuffer(readFileSync(join(fontsDir, 'roboto-regular.woff')));
-    const robotoBold = toBuffer(readFileSync(join(fontsDir, 'roboto-bold.woff')));
-    const playfairRegular = toBuffer(readFileSync(join(fontsDir, 'playfair-regular.woff')));
-    const playfairBold = toBuffer(readFileSync(join(fontsDir, 'playfair-bold.woff')));
-    const monoRegular = toBuffer(readFileSync(join(fontsDir, 'mono-regular.woff')));
-    const monoBold = toBuffer(readFileSync(join(fontsDir, 'mono-bold.woff')));
-
     return [
-      { name: 'Inter', data: interRegular, weight: 400 as const, style: 'normal' as const },
-      { name: 'Inter', data: interBold, weight: 700 as const, style: 'normal' as const },
-      { name: 'Roboto', data: robotoRegular, weight: 400 as const, style: 'normal' as const },
-      { name: 'Roboto', data: robotoBold, weight: 700 as const, style: 'normal' as const },
-      { name: 'Playfair Display', data: playfairRegular, weight: 400 as const, style: 'normal' as const },
-      { name: 'Playfair Display', data: playfairBold, weight: 700 as const, style: 'normal' as const },
-      { name: 'JetBrains Mono', data: monoRegular, weight: 400 as const, style: 'normal' as const },
-      { name: 'JetBrains Mono', data: monoBold, weight: 700 as const, style: 'normal' as const },
+      { name: 'Inter', data: toBuffer(readFileSync(join(fontsDir, 'inter-regular.woff'))), weight: 400, style: 'normal' },
+      { name: 'Inter', data: toBuffer(readFileSync(join(fontsDir, 'inter-bold.woff'))), weight: 700, style: 'normal' },
+      { name: 'Roboto', data: toBuffer(readFileSync(join(fontsDir, 'roboto-regular.woff'))), weight: 400, style: 'normal' },
+      { name: 'Roboto', data: toBuffer(readFileSync(join(fontsDir, 'roboto-bold.woff'))), weight: 700, style: 'normal' },
+      { name: 'Playfair Display', data: toBuffer(readFileSync(join(fontsDir, 'playfair-regular.woff'))), weight: 400, style: 'normal' },
+      { name: 'Playfair Display', data: toBuffer(readFileSync(join(fontsDir, 'playfair-bold.woff'))), weight: 700, style: 'normal' },
+      { name: 'JetBrains Mono', data: toBuffer(readFileSync(join(fontsDir, 'mono-regular.woff'))), weight: 400, style: 'normal' },
+      { name: 'JetBrains Mono', data: toBuffer(readFileSync(join(fontsDir, 'mono-bold.woff'))), weight: 700, style: 'normal' },
     ];
   } catch (err) {
-    console.error('Failed to load local fonts:', err);
+    console.error('Failed to load fonts:', err);
     return [];
   }
 };

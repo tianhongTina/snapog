@@ -1,11 +1,10 @@
-import { ImageResponse } from '@vercel/og';
 import { NextRequest } from 'next/server';
 import { parseOGParams, renderOGImage } from '@/lib/og/render';
 
 export const runtime = 'nodejs';
 
 // GET — standard API usage
-export const GET = async (request: NextRequest): Promise<ImageResponse | Response> => {
+export const GET = async (request: NextRequest): Promise<Response> => {
   try {
     const { searchParams } = new URL(request.url);
     const params = parseOGParams(searchParams);
@@ -19,11 +18,9 @@ export const GET = async (request: NextRequest): Promise<ImageResponse | Respons
 
     params.watermark = true; // GET requests always watermarked (no auth)
 
-    const imageResponse = await renderOGImage(params);
-    return imageResponse;
+    return await renderOGImage(params);
   } catch (error) {
     console.error('OG generation error:', error);
-    console.error('Cause:', (error as any)?.cause);
     return new Response(
       JSON.stringify({ error: 'Failed to generate image', detail: String(error) }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
@@ -32,7 +29,7 @@ export const GET = async (request: NextRequest): Promise<ImageResponse | Respons
 };
 
 // POST — editor preview (supports logoUrl as dataURL in body)
-export const POST = async (request: NextRequest): Promise<ImageResponse | Response> => {
+export const POST = async (request: NextRequest): Promise<Response> => {
   try {
     const body = await request.json();
     const params = { ...body };
@@ -41,16 +38,13 @@ export const POST = async (request: NextRequest): Promise<ImageResponse | Respon
       params.title = 'Untitled';
     }
 
-    // Respect the watermark param from body; default true if not specified
     if (params.watermark === undefined) {
       params.watermark = true;
     }
 
-    const imageResponse = await renderOGImage(params);
-    return imageResponse;
+    return await renderOGImage(params);
   } catch (error) {
     console.error('OG POST error:', error);
-    console.error('Cause:', (error as any)?.cause);
     return new Response(
       JSON.stringify({ error: 'Failed to generate image', detail: String(error) }),
       { status: 500, headers: { 'Content-Type': 'application/json' } }
