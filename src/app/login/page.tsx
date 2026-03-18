@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
-import { Zap, Loader2 } from 'lucide-react';
+import { Zap, Loader2, ArrowLeft } from 'lucide-react';
 
 function LoginContent() {
   const router = useRouter();
@@ -81,16 +81,23 @@ function LoginContent() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+    <div className="min-h-screen flex flex-col bg-muted/30">
+      {/* Top bar */}
+      <div className="h-14 border-b border-border bg-background/80 backdrop-blur-md flex items-center px-6 justify-between">
+        <Link href="/" className="flex items-center gap-2 font-bold text-lg">
+          <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
+            <Zap className="h-4 w-4 text-primary-foreground" />
+          </div>
+          SnapOG
+        </Link>
+        <Link href="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Home
+        </Link>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 font-bold text-2xl">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <Zap className="h-6 w-6 text-primary-foreground" />
-            </div>
-            SnapOG
-          </Link>
-        </div>
 
         <Card>
           <CardHeader>
@@ -173,6 +180,7 @@ function LoginContent() {
             </div>
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

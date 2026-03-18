@@ -153,7 +153,6 @@ function EditorContent() {
           <span className="text-muted-foreground">/</span>
           <span className="text-sm text-muted-foreground">Editor</span>
         </div>
-
         {/* Center: size controls */}
         <div className="flex items-center gap-2 flex-1 justify-center">
           <div className="flex items-center gap-1 rounded-md border border-input bg-background overflow-hidden h-8">

@@ -56,6 +56,9 @@ export const Navbar = () => {
 
         {/* Desktop Nav */}
         <div className="hidden md:flex items-center gap-8">
+          <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
+            Home
+          </Link>
           <Link href="/editor" className="text-muted-foreground hover:text-foreground transition-colors">
             Editor
           </Link>
@@ -130,6 +133,9 @@ export const Navbar = () => {
       {isOpen && (
         <div className="md:hidden border-t border-border bg-background">
           <div className="container mx-auto px-4 py-4 flex flex-col gap-4">
+            <Link href="/" className="text-foreground py-2" onClick={() => setIsOpen(false)}>
+              Home
+            </Link>
             <Link
               href="/editor"
               className="text-foreground py-2"
