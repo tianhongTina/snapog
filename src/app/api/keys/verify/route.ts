@@ -13,7 +13,7 @@ export const GET = async (request: NextRequest): Promise<NextResponse> => {
     return NextResponse.json({ error: 'No API key provided' }, { status: 401 });
   }
 
-  const supabase = createServiceClient();
+  const supabase = await createServiceClient();
   const keyHash = await hashApiKey(apiKey);
 
   // Look up the key

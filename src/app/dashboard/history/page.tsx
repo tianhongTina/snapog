@@ -5,7 +5,7 @@ import type { OGHistory } from '@/types';
 export const dynamic = 'force-dynamic';
 
 export default async function HistoryPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },

@@ -8,7 +8,7 @@ export async function GET(request: Request) {
   const redirect = searchParams.get('redirect') || '/dashboard';
 
   if (code) {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -23,8 +23,7 @@ export async function GET(request: Request) {
                 cookieStore.set(name, value, options)
               );
             } catch {
-              // The `setAll` method was called from a Server Component.
-              // This can be ignored if you have middleware refreshing user sessions.
+              // Safe to ignore in Server Components.
             }
           },
         },
@@ -37,6 +36,5 @@ export async function GET(request: Request) {
     }
   }
 
-  // Something went wrong, redirect to login with error
   return NextResponse.redirect(`${origin}/login?error=auth_callback_failed`);
 }

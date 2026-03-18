@@ -6,7 +6,7 @@ export const checkRateLimit = async (
   userId: string,
   plan: Plan
 ): Promise<RateLimitResult> => {
-  const supabase = createServiceClient();
+  const supabase = await createServiceClient();
   const currentMonth = getCurrentMonth();
   const limit = PLAN_LIMITS[plan].monthly_requests;
 
@@ -58,7 +58,7 @@ export const checkAnonymousRateLimit = async (ip: string): Promise<RateLimitResu
   // Anonymous users get 5 requests per day based on IP
   // In production you'd use a Redis/KV store for this
   // Here we use a simplified in-memory approach or Supabase
-  const supabase = createServiceClient();
+  const supabase = await createServiceClient();
   const today = new Date().toISOString().split('T')[0];
   const limit = 5;
 

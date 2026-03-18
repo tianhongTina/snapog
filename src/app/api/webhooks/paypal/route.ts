@@ -28,7 +28,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     const body = await request.text();
     const event = JSON.parse(body) as PayPalWebhookEvent;
 
-    const supabase = createServiceClient();
+    const supabase = await createServiceClient();
 
     switch (event.event_type) {
       case 'BILLING.SUBSCRIPTION.ACTIVATED': {

@@ -8,9 +8,7 @@ const nextConfig = {
       },
     ],
   },
-  experimental: {
-    serverComponentsExternalPackages: ['cheerio', '@resvg/resvg-js', 'satori'],
-  },
+  serverExternalPackages: ['cheerio', '@resvg/resvg-js', 'satori'],
 };
 
 export default nextConfig;

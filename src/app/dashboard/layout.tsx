@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -20,7 +20,7 @@ export default async function DashboardLayout({
 
   const handleSignOut = async () => {
     'use server';
-    const supabase = createClient();
+    const supabase = await createClient();
     await supabase.auth.signOut();
     redirect('/login');
   };

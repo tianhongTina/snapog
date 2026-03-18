@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 
 // GET /api/keys - list all API keys for the authenticated user
 export const GET = async (): Promise<NextResponse> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -44,7 +44,7 @@ export const GET = async (): Promise<NextResponse> => {
 
 // POST /api/keys - create a new API key
 export const POST = async (request: NextRequest): Promise<NextResponse> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
@@ -97,7 +97,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
 
 // DELETE /api/keys - delete an API key
 export const DELETE = async (request: NextRequest): Promise<NextResponse> => {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const {
     data: { user },
