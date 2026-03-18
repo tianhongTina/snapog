@@ -1,12 +1,34 @@
 import satori from 'satori';
-import { Resvg } from '@resvg/resvg-js';
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { initWasm, Resvg } from '@resvg/resvg-wasm';
 import type { OGParams, TemplateId } from '@/types';
 import { TEMPLATES } from './templates';
 
 export const DEFAULT_WIDTH = 1200;
 export const DEFAULT_HEIGHT = 630;
+
+// Track WASM initialization state
+let wasmInitialized = false;
+let wasmInitPromise: Promise<void> | null = null;
+
+const ensureWasmInitialized = async (baseUrl?: string): Promise<void> => {
+  if (wasmInitialized) return;
+  if (wasmInitPromise) return wasmInitPromise;
+
+  wasmInitPromise = (async () => {
+    try {
+      // Load WASM from public directory via HTTP
+      const wasmUrl = baseUrl ? `${baseUrl}/resvg.wasm` : 'http://localhost:3001/resvg.wasm';
+      await initWasm(fetch(wasmUrl));
+      wasmInitialized = true;
+    } catch (err) {
+      console.error('Failed to initialize resvg-wasm:', err);
+      wasmInitPromise = null;
+      throw err;
+    }
+  })();
+
+  return wasmInitPromise;
+};
 
 // Clamp dimensions to reasonable bounds
 const clampDim = (val: number | undefined, def: number, min: number, max: number): number => {
@@ -14,14 +36,83 @@ const clampDim = (val: number | undefined, def: number, min: number, max: number
   return Math.max(min, Math.min(max, Math.round(val)));
 };
 
-export const renderOGImage = async (params: OGParams): Promise<Response> => {
+// Font cache to avoid re-fetching on every request
+const fontCache = new Map<string, ArrayBuffer>();
+
+const fetchFont = async (url: string): Promise<ArrayBuffer> => {
+  if (fontCache.has(url)) return fontCache.get(url)!;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch font: ${url} (${res.status})`);
+  const buffer = await res.arrayBuffer();
+  fontCache.set(url, buffer);
+  return buffer;
+};
+
+const loadFonts = async (baseUrl: string): Promise<Array<{
+  name: string;
+  data: ArrayBuffer;
+  weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
+  style: 'normal' | 'italic';
+}>> => {
+  const fontsBase = `${baseUrl}/fonts`;
+  try {
+    const [
+      interRegular,
+      interBold,
+      robotoRegular,
+      robotoBold,
+      playfairRegular,
+      playfairBold,
+      monoRegular,
+      monoBold,
+    ] = await Promise.all([
+      fetchFont(`${fontsBase}/inter-regular.woff`),
+      fetchFont(`${fontsBase}/inter-bold.woff`),
+      fetchFont(`${fontsBase}/roboto-regular.woff`),
+      fetchFont(`${fontsBase}/roboto-bold.woff`),
+      fetchFont(`${fontsBase}/playfair-regular.woff`),
+      fetchFont(`${fontsBase}/playfair-bold.woff`),
+      fetchFont(`${fontsBase}/mono-regular.woff`),
+      fetchFont(`${fontsBase}/mono-bold.woff`),
+    ]);
+
+    return [
+      { name: 'Inter', data: interRegular, weight: 400, style: 'normal' },
+      { name: 'Inter', data: interBold, weight: 700, style: 'normal' },
+      { name: 'Roboto', data: robotoRegular, weight: 400, style: 'normal' },
+      { name: 'Roboto', data: robotoBold, weight: 700, style: 'normal' },
+      { name: 'Playfair Display', data: playfairRegular, weight: 400, style: 'normal' },
+      { name: 'Playfair Display', data: playfairBold, weight: 700, style: 'normal' },
+      { name: 'JetBrains Mono', data: monoRegular, weight: 400, style: 'normal' },
+      { name: 'JetBrains Mono', data: monoBold, weight: 700, style: 'normal' },
+    ];
+  } catch (err) {
+    console.error('Failed to load fonts:', err);
+    return [];
+  }
+};
+
+export const renderOGImage = async (params: OGParams, request?: Request): Promise<Response> => {
   const templateId = (params.template || 'tech-dark') as TemplateId;
   const TemplateComponent = TEMPLATES[templateId] || TEMPLATES['tech-dark'];
 
   const width = clampDim(params.width, DEFAULT_WIDTH, 400, 2400);
   const height = clampDim(params.height, DEFAULT_HEIGHT, 200, 1260);
 
-  const fonts = loadFonts();
+  // Determine base URL for fetching public assets
+  let baseUrl: string;
+  if (request) {
+    const url = new URL(request.url);
+    baseUrl = `${url.protocol}//${url.host}`;
+  } else if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_APP_URL) {
+    baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+  } else if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
+    baseUrl = 'http://localhost:3001';
+  } else {
+    baseUrl = 'http://localhost:3001';
+  }
+
+  const fonts = await loadFonts(baseUrl);
   const resolvedParams = { ...params, width, height };
   const element = TemplateComponent(resolvedParams);
 
@@ -38,14 +129,15 @@ export const renderOGImage = async (params: OGParams): Promise<Response> => {
     fonts,
   });
 
-  // Convert SVG → PNG via resvg-js
+  // Initialize WASM resvg and convert SVG → PNG
+  await ensureWasmInitialized(baseUrl);
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: width },
   });
   const pngData = resvg.render();
   const pngBuffer = pngData.asPng();
 
-  return new Response(new Uint8Array(pngBuffer), {
+  return new Response(pngBuffer.buffer as ArrayBuffer, {
     headers: {
       'Content-Type': 'image/png',
       'Cache-Control': 'public, max-age=3600',
@@ -130,37 +222,6 @@ const addWatermark = (element: React.ReactElement, params: OGParams): React.Reac
     element,
     React.createElement('div', { style: positionStyle }, text)
   );
-};
-
-const loadFonts = (): Array<{
-  name: string;
-  data: ArrayBuffer;
-  weight: 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900;
-  style: 'normal' | 'italic';
-}> => {
-  try {
-    const fontsDir = join(process.cwd(), 'public', 'fonts');
-
-    const toBuffer = (buf: Buffer): ArrayBuffer => {
-      const ab = new ArrayBuffer(buf.byteLength);
-      new Uint8Array(ab).set(buf);
-      return ab;
-    };
-
-    return [
-      { name: 'Inter', data: toBuffer(readFileSync(join(fontsDir, 'inter-regular.woff'))), weight: 400, style: 'normal' },
-      { name: 'Inter', data: toBuffer(readFileSync(join(fontsDir, 'inter-bold.woff'))), weight: 700, style: 'normal' },
-      { name: 'Roboto', data: toBuffer(readFileSync(join(fontsDir, 'roboto-regular.woff'))), weight: 400, style: 'normal' },
-      { name: 'Roboto', data: toBuffer(readFileSync(join(fontsDir, 'roboto-bold.woff'))), weight: 700, style: 'normal' },
-      { name: 'Playfair Display', data: toBuffer(readFileSync(join(fontsDir, 'playfair-regular.woff'))), weight: 400, style: 'normal' },
-      { name: 'Playfair Display', data: toBuffer(readFileSync(join(fontsDir, 'playfair-bold.woff'))), weight: 700, style: 'normal' },
-      { name: 'JetBrains Mono', data: toBuffer(readFileSync(join(fontsDir, 'mono-regular.woff'))), weight: 400, style: 'normal' },
-      { name: 'JetBrains Mono', data: toBuffer(readFileSync(join(fontsDir, 'mono-bold.woff'))), weight: 700, style: 'normal' },
-    ];
-  } catch (err) {
-    console.error('Failed to load fonts:', err);
-    return [];
-  }
 };
 
 export const parseOGParams = (searchParams: URLSearchParams): OGParams => {
