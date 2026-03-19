@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { parseOGParams, renderOGImage } from '@/lib/og/render';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
 // GET — standard API usage
 export const GET = async (request: NextRequest): Promise<Response> => {
@@ -18,7 +18,7 @@ export const GET = async (request: NextRequest): Promise<Response> => {
 
     params.watermark = true; // GET requests always watermarked (no auth)
 
-    return await renderOGImage(params, request);
+    return await renderOGImage(params);
   } catch (error) {
     console.error('OG generation error:', error);
     return new Response(
@@ -42,7 +42,7 @@ export const POST = async (request: NextRequest): Promise<Response> => {
       params.watermark = true;
     }
 
-    return await renderOGImage(params, request);
+    return await renderOGImage(params);
   } catch (error) {
     console.error('OG POST error:', error);
     return new Response(

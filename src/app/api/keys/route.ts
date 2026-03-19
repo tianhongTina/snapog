@@ -3,8 +3,6 @@ import { createClient } from '@/lib/supabase/server';
 import { generateApiKey, hashApiKey, getKeyPrefix } from '@/lib/utils';
 import type { ApiKeyListItem, ApiKeyCreateResponse } from '@/types';
 
-export const runtime = 'edge';
-
 // GET /api/keys - list all API keys for the authenticated user
 export const GET = async (): Promise<NextResponse> => {
   const supabase = await createClient();

@@ -3,7 +3,6 @@ import { HistoryGrid } from '@/components/dashboard/HistoryGrid';
 import type { OGHistory } from '@/types';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'edge';
 
 export default async function HistoryPage() {
   const supabase = await createClient();
