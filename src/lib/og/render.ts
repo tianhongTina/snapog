@@ -1,5 +1,8 @@
 import satori from 'satori';
 import { initWasm, Resvg } from '@resvg/resvg-wasm';
+// Static WASM import — required for Cloudflare Workers (dynamic fetch not allowed)
+// @ts-ignore
+import resvgWasm from '@resvg/resvg-wasm/index_bg.wasm';
 import type { OGParams, TemplateId } from '@/types';
 import { TEMPLATES } from './templates';
 
@@ -10,15 +13,14 @@ export const DEFAULT_HEIGHT = 630;
 let wasmInitialized = false;
 let wasmInitPromise: Promise<void> | null = null;
 
-const ensureWasmInitialized = async (baseUrl?: string): Promise<void> => {
+const ensureWasmInitialized = async (): Promise<void> => {
   if (wasmInitialized) return;
   if (wasmInitPromise) return wasmInitPromise;
 
   wasmInitPromise = (async () => {
     try {
-      // Load WASM from public directory via HTTP
-      const wasmUrl = baseUrl ? `${baseUrl}/resvg.wasm` : 'http://localhost:3001/resvg.wasm';
-      await initWasm(fetch(wasmUrl));
+      // Pass the statically imported WebAssembly.Module to initWasm
+      await initWasm(resvgWasm);
       wasmInitialized = true;
     } catch (err) {
       console.error('Failed to initialize resvg-wasm:', err);
@@ -99,15 +101,13 @@ export const renderOGImage = async (params: OGParams, request?: Request): Promis
   const width = clampDim(params.width, DEFAULT_WIDTH, 400, 2400);
   const height = clampDim(params.height, DEFAULT_HEIGHT, 200, 1260);
 
-  // Determine base URL for fetching public assets
+  // Determine base URL for fetching fonts
   let baseUrl: string;
   if (request) {
     const url = new URL(request.url);
     baseUrl = `${url.protocol}//${url.host}`;
   } else if (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_APP_URL) {
     baseUrl = process.env.NEXT_PUBLIC_APP_URL;
-  } else if (typeof process !== 'undefined' && process.env.NODE_ENV === 'development') {
-    baseUrl = 'http://localhost:3001';
   } else {
     baseUrl = 'http://localhost:3001';
   }
@@ -130,7 +130,7 @@ export const renderOGImage = async (params: OGParams, request?: Request): Promis
   });
 
   // Initialize WASM resvg and convert SVG → PNG
-  await ensureWasmInitialized(baseUrl);
+  await ensureWasmInitialized();
   const resvg = new Resvg(svg, {
     fitTo: { mode: 'width', value: width },
   });
