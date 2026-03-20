@@ -10,6 +10,7 @@ import type { User as SupabaseUser } from '@supabase/supabase-js';
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<SupabaseUser | null>(null);
+  const [plan, setPlan] = useState<'free' | 'pro' | 'business'>('free');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,12 +19,27 @@ export const Navbar = () => {
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        // Fetch user's plan
+        fetch('/api/user/plan')
+          .then((res) => res.json())
+          .then((data) => setPlan(data.plan || 'free'))
+          .catch(() => setPlan('free'));
+      }
       setLoading(false);
     });
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetch('/api/user/plan')
+          .then((res) => res.json())
+          .then((data) => setPlan(data.plan || 'free'))
+          .catch(() => setPlan('free'));
+      } else {
+        setPlan('free');
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -65,7 +81,7 @@ export const Navbar = () => {
           <Link href="/pricing" className="text-muted-foreground hover:text-foreground transition-colors">
             Pricing
           </Link>
-          {user && (
+          {user && (plan !== 'free') && (
             <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
               Dashboard
             </Link>
@@ -150,7 +166,7 @@ export const Navbar = () => {
             >
               Pricing
             </Link>
-            {user && (
+            {user && (plan !== 'free') && (
               <Link
                 href="/dashboard"
                 className="text-foreground py-2"

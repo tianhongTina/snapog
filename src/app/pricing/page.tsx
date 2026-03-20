@@ -117,8 +117,8 @@ const PayPalSubscribeButton = ({
           title: 'Subscription activated!',
           description: `Your ${planType} plan is now active. Subscription ID: ${data.subscriptionID}`,
         });
-        // Redirect to dashboard
-        window.location.href = '/dashboard';
+        // Redirect to dashboard keys (Pro/Business users)
+        window.location.href = '/dashboard/keys';
         return Promise.resolve();
       }}
       onError={(err) => {
@@ -135,6 +135,13 @@ const PayPalSubscribeButton = ({
 
 export default function PricingPage() {
   const [billingError, setBillingError] = useState(false);
+  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
+
+  // While hovering, the hovered card is active; otherwise default to the highlighted plan
+  const getActive = (name: string, defaultHighlighted: boolean) => {
+    if (hoveredPlan !== null) return hoveredPlan === name;
+    return defaultHighlighted;
+  };
 
   return (
     <>
@@ -150,14 +157,18 @@ export default function PricingPage() {
           </div>
 
           {/* Plans */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {plans.map((plan) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-center">
+            {plans.map((plan) => {
+              const active = getActive(plan.name, plan.highlighted);
+              return (
               <div
                 key={plan.name}
-                className={`relative rounded-2xl p-8 border transition-all duration-300 hover:shadow-lg ${
-                  plan.highlighted
-                    ? 'border-primary bg-primary/5 shadow-2xl scale-105 hover:scale-110'
-                    : 'border-border bg-background shadow-sm hover:border-primary/50 hover:shadow-md'
+                onMouseEnter={() => setHoveredPlan(plan.name)}
+                onMouseLeave={() => setHoveredPlan(null)}
+                className={`relative rounded-2xl p-8 border cursor-pointer transition-all duration-300 ${
+                  active
+                    ? 'border-primary bg-primary/5 shadow-2xl -translate-y-2'
+                    : 'border-border bg-background shadow-sm'
                 }`}
               >
                 {plan.badge && (
@@ -168,6 +179,7 @@ export default function PricingPage() {
 
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold">{plan.name}</h2>
+
                   <div className="flex items-baseline gap-1 my-2">
                     <span className="text-4xl font-extrabold">{plan.price}</span>
                     <span className="text-muted-foreground">{plan.period}</span>
@@ -192,7 +204,7 @@ export default function PricingPage() {
 
                 {plan.planType === 'free' ? (
                   <Button
-                    variant={plan.highlighted ? 'default' : 'outline'}
+                    variant={active ? 'default' : 'outline'}
                     className="w-full"
                     asChild
                   >
@@ -212,7 +224,7 @@ export default function PricingPage() {
                       </PayPalScriptProvider>
                     ) : (
                       <Button
-                        variant={plan.highlighted ? 'default' : 'outline'}
+                        variant={active ? 'default' : 'outline'}
                         className="w-full"
                         asChild
                       >
@@ -222,7 +234,8 @@ export default function PricingPage() {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* FAQ */}

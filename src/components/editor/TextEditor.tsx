@@ -196,6 +196,79 @@ export const TextEditor = () => {
           onChange={(s) => setParam('siteUrlStyle', s)}
         />
       </div>
+
+      {/* Vertical domain fields - shown only for relevant templates */}
+      {(params.template === 'tech-blog' || params.template === 'ecommerce' || params.template === 'saas-product') && (
+        <div className="border-t border-border pt-5 space-y-4">
+          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Template-specific Fields
+          </div>
+
+          {/* Badge (tech-blog + ecommerce + saas-product) */}
+          <div className="space-y-1.5">
+            <Label htmlFor="badge">
+              {params.template === 'tech-blog' ? 'Badge (e.g., #TypeScript)' :
+               params.template === 'ecommerce' ? 'Badge (e.g., NEW, SALE)' :
+               'Badge (e.g., SaaS, v2.0)'}
+            </Label>
+            <Input
+              id="badge"
+              value={params.badge || ''}
+              onChange={(e) => setParam('badge', e.target.value)}
+              placeholder={
+                params.template === 'tech-blog' ? '#TypeScript' :
+                params.template === 'ecommerce' ? 'NEW' :
+                'SaaS'
+              }
+              maxLength={30}
+            />
+          </div>
+
+          {/* Price - ecommerce only */}
+          {params.template === 'ecommerce' && (
+            <div className="space-y-1.5">
+              <Label htmlFor="price">Price</Label>
+              <Input
+                id="price"
+                value={params.price || ''}
+                onChange={(e) => setParam('price', e.target.value)}
+                placeholder="$99 /mo"
+                maxLength={20}
+              />
+            </div>
+          )}
+
+          {/* Metrics - saas-product only */}
+          {params.template === 'saas-product' && (
+            <div className="space-y-3">
+              <div className="text-xs text-muted-foreground">Metrics displayed at the bottom (max 3 items)</div>
+              {([1, 2, 3] as const).map((n) => {
+                const labelKey = `metric${n}Label` as 'metric1Label' | 'metric2Label' | 'metric3Label';
+                const valueKey = `metric${n}Value` as 'metric1Value' | 'metric2Value' | 'metric3Value';
+                return (
+                  <div key={n} className="flex gap-2 items-center">
+                    <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground shrink-0">{n}</div>
+                    <Input
+                      value={params[labelKey] || ''}
+                      onChange={(e) => setParam(labelKey, e.target.value)}
+                      placeholder={n === 1 ? 'Active Users' : n === 2 ? 'Uptime' : 'Speed'}
+                      maxLength={20}
+                      className="flex-1"
+                    />
+                    <Input
+                      value={params[valueKey] || ''}
+                      onChange={(e) => setParam(valueKey, e.target.value)}
+                      placeholder={n === 1 ? '10K+' : n === 2 ? '99.9%' : '< 100ms'}
+                      maxLength={15}
+                      className="w-24 shrink-0"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

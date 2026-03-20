@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +21,8 @@ const plans = [
     ],
     cta: 'Get Started Free',
     href: '/editor',
-    highlighted: false,
+    defaultHighlighted: false,
+    badge: undefined as string | undefined,
   },
   {
     name: 'Pro',
@@ -35,7 +39,7 @@ const plans = [
     ],
     cta: 'Upgrade to Pro',
     href: '/pricing',
-    highlighted: true,
+    defaultHighlighted: true,
     badge: 'Most Popular',
   },
   {
@@ -55,11 +59,20 @@ const plans = [
     ],
     cta: 'Upgrade to Business',
     href: '/pricing',
-    highlighted: false,
+    defaultHighlighted: false,
+    badge: undefined as string | undefined,
   },
 ];
 
 export const PricingSection = () => {
+  const [hoveredPlan, setHoveredPlan] = useState<string | null>(null);
+
+  // While hovering, the hovered card is "active"; otherwise default to Pro
+  const getActive = (name: string, defaultHighlighted: boolean) => {
+    if (hoveredPlan !== null) return hoveredPlan === name;
+    return defaultHighlighted;
+  };
+
   return (
     <section className="py-24 bg-muted/30" id="pricing">
       <div className="container mx-auto px-4">
@@ -70,49 +83,54 @@ export const PricingSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => (
-            <div
-              key={plan.name}
-              className={`relative rounded-2xl p-8 border ${
-                plan.highlighted
-                  ? 'border-primary bg-primary/5 shadow-xl scale-105'
-                  : 'border-border bg-background'
-              }`}
-            >
-              {plan.badge && (
-                <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  {plan.badge}
-                </Badge>
-              )}
-
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-1">{plan.name}</h3>
-                <div className="flex items-baseline gap-1 mb-2">
-                  <span className="text-4xl font-extrabold">{plan.price}</span>
-                  <span className="text-muted-foreground">{plan.period}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{plan.description}</p>
-              </div>
-
-              <ul className="space-y-3 mb-8">
-                {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-center gap-2 text-sm">
-                    <Check className="h-4 w-4 text-green-500 shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                className="w-full"
-                variant={plan.highlighted ? 'default' : 'outline'}
-                asChild
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-center">
+          {plans.map((plan) => {
+            const active = getActive(plan.name, plan.defaultHighlighted);
+            return (
+              <div
+                key={plan.name}
+                onMouseEnter={() => setHoveredPlan(plan.name)}
+                onMouseLeave={() => setHoveredPlan(null)}
+                className={`relative rounded-2xl p-8 border cursor-pointer transition-all duration-300 ${
+                  active
+                    ? 'border-primary bg-primary/5 shadow-2xl -translate-y-2'
+                    : 'border-border bg-background shadow-sm'
+                }`}
               >
-                <Link href={plan.href}>{plan.cta}</Link>
-              </Button>
-            </div>
-          ))}
+                {plan.badge && (
+                  <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    {plan.badge}
+                  </Badge>
+                )}
+
+                <div className="mb-6">
+                  <h3 className="text-lg font-semibold mb-1">{plan.name}</h3>
+                  <div className="flex items-baseline gap-1 mb-2">
+                    <span className="text-4xl font-extrabold">{plan.price}</span>
+                    <span className="text-muted-foreground">{plan.period}</span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">{plan.description}</p>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-center gap-2 text-sm">
+                      <Check className="h-4 w-4 text-green-500 shrink-0" />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+
+                <Button
+                  className="w-full"
+                  variant={active ? 'default' : 'outline'}
+                  asChild
+                >
+                  <Link href={plan.href}>{plan.cta}</Link>
+                </Button>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>

@@ -12,13 +12,16 @@ export default function ApiKeysPage() {
   const fetchKeys = useCallback(async () => {
     try {
       const response = await fetch('/api/keys');
-      if (!response.ok) throw new Error('Failed to fetch keys');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({})) as { error?: string; detail?: string };
+        throw new Error(err.detail || err.error || `HTTP ${response.status}`);
+      }
       const data = await response.json() as ApiKeyListItem[];
       setApiKeys(data);
-    } catch {
+    } catch (err) {
       toast({
-        title: 'Error',
-        description: 'Failed to load API keys.',
+        title: 'Failed to load API keys',
+        description: String(err instanceof Error ? err.message : 'Unknown error'),
         variant: 'destructive',
       });
     } finally {
@@ -38,7 +41,10 @@ export default function ApiKeysPage() {
         body: JSON.stringify({ name }),
       });
 
-      if (!response.ok) throw new Error('Failed to create key');
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({})) as { error?: string; detail?: string };
+        throw new Error(err.detail || err.error || `HTTP ${response.status}`);
+      }
 
       const data = await response.json() as { key: string };
 
@@ -46,10 +52,10 @@ export default function ApiKeysPage() {
       await fetchKeys();
 
       return { key: data.key };
-    } catch {
+    } catch (err) {
       toast({
-        title: 'Error',
-        description: 'Failed to create API key.',
+        title: 'Failed to create API key',
+        description: String(err instanceof Error ? err.message : 'Unknown error'),
         variant: 'destructive',
       });
       return null;

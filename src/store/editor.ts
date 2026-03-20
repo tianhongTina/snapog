@@ -28,6 +28,17 @@ const DEFAULT_PARAMS: OGParams = {
   primaryColor: '#3b82f6',
   backgroundColor: '',
   textColor: '',
+  backgroundImageUrl: '',
+  backgroundImageMode: 'cover',
+  backgroundLayer: 'image',
+  badge: '',
+  price: '',
+  metric1Label: '',
+  metric1Value: '',
+  metric2Label: '',
+  metric2Value: '',
+  metric3Label: '',
+  metric3Value: '',
   watermark: true,
 };
 

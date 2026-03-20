@@ -6,6 +6,7 @@ import { TextEditor } from './TextEditor';
 import { ColorPicker } from './ColorPicker';
 import { LogoUpload } from './LogoUpload';
 import { WatermarkEditor } from './WatermarkEditor';
+import { BackgroundImageUpload } from './BackgroundImageUpload';
 import { cn } from '@/lib/utils';
 
 type Tab = 'template' | 'text' | 'style' | 'logo';
@@ -47,6 +48,9 @@ export const EditorPanel = () => {
         {activeTab === 'style' && (
           <div className="space-y-6">
             <ColorPicker />
+            <div className="border-t border-border pt-6">
+              <BackgroundImageUpload />
+            </div>
             <div className="border-t border-border pt-6">
               <WatermarkEditor />
             </div>

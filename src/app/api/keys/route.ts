@@ -4,7 +4,7 @@ import { generateApiKey, hashApiKey, getKeyPrefix } from '@/lib/utils';
 import type { ApiKeyListItem, ApiKeyCreateResponse } from '@/types';
 
 // GET /api/keys - list all API keys for the authenticated user
-export const GET = async (): Promise<NextResponse> => {
+export const GET = async (_request: NextRequest): Promise<NextResponse> => {
   const supabase = await createClient();
 
   const {

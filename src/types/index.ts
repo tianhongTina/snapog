@@ -10,7 +10,11 @@ export type TemplateId =
   | 'minimal-dark'
   | 'minimal-light'
   | 'startup'
-  | 'code-style';
+  | 'code-style'
+  // Vertical domain templates
+  | 'tech-blog'
+  | 'ecommerce'
+  | 'saas-product';
 
 export type FontId =
   | 'inter'
@@ -57,6 +61,11 @@ export interface OGParams {
   backgroundColor?: string;
   textColor?: string;
 
+  // Background image (overrides backgroundColor when backgroundLayer === 'image')
+  backgroundImageUrl?: string;                       // base64 data URI
+  backgroundImageMode?: 'cover' | 'contain' | 'fill'; // default 'cover'
+  backgroundLayer?: 'image' | 'color';               // default 'image' when image is set
+
   // Per-field text styles (Pro/Business)
   titleStyle?: TextStyle;
   descriptionStyle?: TextStyle;
@@ -70,6 +79,16 @@ export interface OGParams {
   // Watermark config (Pro/Business)
   watermark?: boolean;
   watermarkConfig?: WatermarkConfig;
+
+  // Vertical domain fields
+  badge?: string;          // label tag, e.g. "NEW", "SALE", "#TypeScript"
+  price?: string;          // ecommerce: e.g. "$99 /mo"
+  metric1Label?: string;   // SaaS metric 1 label, e.g. "Active Users"
+  metric1Value?: string;   // SaaS metric 1 value, e.g. "10,000+"
+  metric2Label?: string;
+  metric2Value?: string;
+  metric3Label?: string;
+  metric3Value?: string;
 }
 
 // ===== Database Types =====
